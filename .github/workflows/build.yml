@@ -1,0 +1,41 @@
+name: Ghost Hub Final Build
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build Ghost Logic (Dex Only)
+        run: |
+          sudo apt-get update && sudo apt-get install -y apktool zip
+          # Ресурстарды (XML) жинамай, тек біз өзгерткен Smali-ді жинаймыз
+          apktool b -r gh_work -o ghost_temp.apk
+
+      - name: Inject into Original APK (Zero Errors)
+        run: |
+          # Кодты оригинал APK-ның ішіне тікелей саламыз
+          # Бұл әдіс 100% қатесіз жинайды
+          mkdir -p temp_dex
+          unzip ghost_temp.apk "classes*.dex" -d temp_dex/
+          cd temp_dex/
+          zip -u ../gh.apk classes.dex classes2.dex classes3.dex
+          cd ../
+          mv gh.apk GhostHub_Ready.apk
+
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GhostHub-Final
+          path: GhostHub_Ready.apk
